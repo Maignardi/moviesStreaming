@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "772073639821",
+    "project_id": "sidia-streaming",
+    "storage_bucket": "sidia-streaming.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772073639821:android:3c291c9c45b090e46e37c4",
+        "android_client_info": {
+          "package_name": "com.maignardi.moviestreamingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAt6HlgczsW31mfH2hglMFV5FImwzP8SYc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
