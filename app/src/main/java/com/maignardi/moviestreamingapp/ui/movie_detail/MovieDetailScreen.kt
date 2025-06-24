@@ -12,12 +12,31 @@ import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,16 +45,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(UnstableApi::class)
@@ -50,8 +70,9 @@ fun MovieDetailScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val viewModel: MovieDetailViewModel = koinViewModel()
     val movie by viewModel.movie.collectAsState()
+    val exoPlayer = viewModel.exoPlayer
+    val isBuffering = remember { mutableStateOf(false) }
     var playVideo by rememberSaveable { mutableStateOf(false) }
-    var videoPosition by rememberSaveable { mutableStateOf(0L) }
 
     LaunchedEffect(movieId) {
         viewModel.loadMovie(movieId)
@@ -72,37 +93,52 @@ fun MovieDetailScreen(
     ) {
         movie?.let { movie ->
             if (playVideo) {
-                val exoPlayer = remember(movie.videoUrl) {
-                    ExoPlayer.Builder(context).build().apply {
-                        setMediaItem(MediaItem.fromUri(movie.videoUrl.toUri()))
-                        seekTo(videoPosition)
-                        prepare()
-                        playWhenReady = true
-                    }
-                }
-
-                DisposableEffect(lifecycleOwner, exoPlayer) {
+                DisposableEffect(Unit) {
                     hideSystemUI(activity)
+
+                    val listener = object : androidx.media3.common.Player.Listener {
+                        var loadingStartTime = 0L
+                        override fun onIsLoadingChanged(isLoading: Boolean) {
+                            if (isLoading) {
+                                loadingStartTime = System.currentTimeMillis()
+                                isBuffering.value = false
+                            } else {
+                                val elapsed = System.currentTimeMillis() - loadingStartTime
+                                if (elapsed > 300) {
+                                    isBuffering.value = true
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        delay(100)
+                                        isBuffering.value = false
+                                    }
+                                } else {
+                                    isBuffering.value = false
+                                }
+                            }
+                        }
+
+                        override fun onPlaybackStateChanged(state: Int) {
+                            if (state == androidx.media3.common.Player.STATE_ENDED) {
+                                exoPlayer.seekTo(0)
+                                exoPlayer.play()
+                            }
+                        }
+                    }
+
+                    exoPlayer.addListener(listener)
+
                     val observer = LifecycleEventObserver { _, event ->
                         when (event) {
-                            Lifecycle.Event.ON_PAUSE -> {
-                                videoPosition = exoPlayer.currentPosition
-                                exoPlayer.pause()
-                            }
+                            Lifecycle.Event.ON_PAUSE -> exoPlayer.pause()
                             Lifecycle.Event.ON_RESUME -> exoPlayer.play()
-                            Lifecycle.Event.ON_DESTROY -> {
-                                videoPosition = exoPlayer.currentPosition
-                                exoPlayer.release()
-                                showSystemUI(activity)
-                            }
                             else -> {}
                         }
                     }
 
                     lifecycleOwner.lifecycle.addObserver(observer)
+
                     onDispose {
-                        videoPosition = exoPlayer.currentPosition
-                        exoPlayer.release()
+                        exoPlayer.pause()
+                        exoPlayer.removeListener(listener)
                         lifecycleOwner.lifecycle.removeObserver(observer)
                         showSystemUI(activity)
                     }
@@ -124,6 +160,17 @@ fun MovieDetailScreen(
                         },
                         modifier = Modifier.fillMaxSize()
                     )
+
+                    if (isBuffering.value) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
                 }
             } else {
                 Column(
@@ -134,7 +181,11 @@ fun MovieDetailScreen(
                         .padding(16.dp)
                 ) {
                     TextButton(onClick = onBack) {
-                        Text("\u2190 Voltar", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                        Text(
+                            "\u2190 Voltar",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

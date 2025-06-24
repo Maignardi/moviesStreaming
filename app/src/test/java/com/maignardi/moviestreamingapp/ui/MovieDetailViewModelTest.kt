@@ -1,5 +1,7 @@
 package com.maignardi.moviestreamingapp.ui
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.maignardi.moviestreamingapp.domain.model.Movie
 import com.maignardi.moviestreamingapp.domain.usecase.GetMovieByIdUseCase
 import com.maignardi.moviestreamingapp.ui.movie_detail.MovieDetailViewModel
@@ -13,11 +15,15 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class MovieDetailViewModelTest {
 
     private val getMovieByIdUseCase: GetMovieByIdUseCase = mockk()
+    private val application: Application = ApplicationProvider.getApplicationContext()
     private lateinit var viewModel: MovieDetailViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -25,6 +31,7 @@ class MovieDetailViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        viewModel = MovieDetailViewModel(application, getMovieByIdUseCase)
     }
 
     @After
@@ -33,7 +40,7 @@ class MovieDetailViewModelTest {
     }
 
     @Test
-    fun `loadMovie - atualiza o StateFlow com filme retornado`() = runTest {
+    fun `loadMovie atualiza o StateFlow com o filme retornado`() = runTest {
         val movieId = "abc123"
         val expectedMovie = Movie(
             id = movieId,
@@ -44,8 +51,6 @@ class MovieDetailViewModelTest {
         )
 
         coEvery { getMovieByIdUseCase(movieId) } returns expectedMovie
-
-        viewModel = MovieDetailViewModel(getMovieByIdUseCase)
 
         viewModel.loadMovie(movieId)
         advanceUntilIdle()

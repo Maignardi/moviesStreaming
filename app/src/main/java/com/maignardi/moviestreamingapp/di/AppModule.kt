@@ -10,6 +10,7 @@ import com.maignardi.moviestreamingapp.ui.movie_detail.MovieDetailViewModel
 import com.maignardi.moviestreamingapp.ui.movie_list.MovieListViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+import android.app.Application
 
 val appModule = module {
 
@@ -29,5 +30,5 @@ val appModule = module {
 
     // ViewModels
     viewModel { MovieListViewModel(get()) }
-    viewModel { MovieDetailViewModel(get()) }
+    viewModel { MovieDetailViewModel(get<Application>(), get()) }
 }
