@@ -20,6 +20,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.maignardi.moviestreamingapp.navigation.Screen
 import com.maignardi.moviestreamingapp.ui.components.SearchBar
 import org.koin.androidx.compose.koinViewModel
@@ -29,74 +31,86 @@ fun MovieListScreen(navController: NavController) {
     val viewModel: MovieListViewModel = koinViewModel()
     val allMovies by viewModel.movies.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val searchQuery = remember { mutableStateOf("") }
 
-    val filteredMovies = allMovies.filter {
+    val filtered = allMovies.filter {
         it.title.contains(searchQuery.value, ignoreCase = true) ||
                 it.description.contains(searchQuery.value, ignoreCase = true)
     }
 
-    Column(
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isLoading)
+
+    SwipeRefresh(
+        state = swipeRefreshState,
+        onRefresh = { viewModel.loadMovies() },
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .background(Color.Black)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Movie Streaming App",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = Color.Black,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        SearchBar(searchText = searchQuery)
-
-        if (!error.isNullOrBlank()) {
-            Text(
-                text = "Erro: $error",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(horizontal = 16.dp)
         ) {
-            items(filteredMovies) { movie ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            navController.navigate(Screen.MovieDetail.route + "/${movie.id}")
-                        }
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(movie.thumbnailUrl),
-                        contentDescription = movie.title,
-                        contentScale = ContentScale.Crop,
+            Spacer(Modifier.height(48.dp))
+
+            Text(
+                text = "Movie Streaming App",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            SearchBar(searchText = searchQuery)
+
+            if (!error.isNullOrBlank()) {
+                Text(
+                    text = "Erro: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(filtered) { movie ->
+                    Column(
                         modifier = Modifier
-                            .height(180.dp)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = movie.title,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Black
-                        ),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                            .clickable {
+                                navController.navigate(Screen.MovieDetail.route + "/${movie.id}")
+                            }
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(movie.thumbnailUrl),
+                            contentDescription = movie.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .height(180.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = movie.title,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

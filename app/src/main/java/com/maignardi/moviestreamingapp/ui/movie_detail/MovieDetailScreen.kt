@@ -1,5 +1,6 @@
 package com.maignardi.moviestreamingapp.ui.movie_detail
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Build
 import android.view.ViewGroup
@@ -7,6 +8,7 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,11 +32,13 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.rememberAsyncImagePainter
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(UnstableApi::class)
 @RequiresApi(Build.VERSION_CODES.R)
 @Composable
 fun MovieDetailScreen(
@@ -177,6 +181,7 @@ fun MovieDetailScreen(
     }
 }
 
+@SuppressLint("WrongConstant")
 @RequiresApi(Build.VERSION_CODES.R)
 private fun hideSystemUI(activity: Activity) {
     WindowCompat.setDecorFitsSystemWindows(activity.window, false)
@@ -188,6 +193,7 @@ private fun hideSystemUI(activity: Activity) {
     activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 }
 
+@SuppressLint("WrongConstant")
 @RequiresApi(Build.VERSION_CODES.R)
 private fun showSystemUI(activity: Activity) {
     WindowCompat.setDecorFitsSystemWindows(activity.window, true)

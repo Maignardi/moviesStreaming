@@ -90,4 +90,10 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("androidx.media3:media3-ui:1.3.1")
 
+
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.33.2-alpha")
+
+    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("junit:junit:4.13.2")
 }

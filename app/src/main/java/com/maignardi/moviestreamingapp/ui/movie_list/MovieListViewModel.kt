@@ -19,15 +19,26 @@ class MovieListViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
-        fetchMovies()
+        loadMovies()
     }
 
-    private fun fetchMovies() {
+    fun loadMovies() {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             getMoviesUseCase()
-                .catch { _error.value = it.message }
-                .collect { _movies.value = it }
+                .catch { exception ->
+                    _error.value = exception.message
+                    _movies.value = emptyList()
+                }
+                .collect { result ->
+                    _movies.value = result
+                }
+            _isLoading.value = false
         }
     }
 }
